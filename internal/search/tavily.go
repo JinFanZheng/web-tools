@@ -23,9 +23,10 @@ type TavilyClient struct {
 
 // tavilyRequest is the JSON body sent to the Tavily /search endpoint.
 type tavilyRequest struct {
-	APIKey     string `json:"api_key"`
 	Query      string `json:"query"`
 	MaxResults int    `json:"max_results,omitempty"`
+	Topic      string `json:"topic,omitempty"`
+	TimeRange  string `json:"time_range,omitempty"`
 }
 
 // tavilyResult is a single result from the Tavily API response.
@@ -52,11 +53,12 @@ func NewTavilyClient(apiKey string) *TavilyClient {
 }
 
 // Query sends a search query to Tavily and returns normalised SearchResults.
-func (c *TavilyClient) Query(query string, limit int) ([]SearchResult, error) {
+func (c *TavilyClient) Query(query string, limit int, topic string, timeRange string) ([]SearchResult, error) {
 	reqBody := tavilyRequest{
-		APIKey:     c.apiKey,
 		Query:      query,
 		MaxResults: limit,
+		Topic:      topic,
+		TimeRange:  timeRange,
 	}
 
 	payload, err := json.Marshal(reqBody)
@@ -79,6 +81,7 @@ func (c *TavilyClient) Query(query string, limit int) ([]SearchResult, error) {
 		)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

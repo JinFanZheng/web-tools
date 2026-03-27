@@ -23,9 +23,13 @@ func Cmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "web-search <query>",
-		Short: "Search the web via local SearXNG",
-		Long: `Search the web using a local SearXNG instance (aggregates Google, Bing, DuckDuckGo).
-Zero cost, no API keys, no rate limits.`,
+		Short: "Search the web via SearXNG or Tavily",
+		Long: `Search the web using a local SearXNG instance (default) or the Tavily API.
+
+SearXNG aggregates Google, Bing, DuckDuckGo — zero cost, no API keys, no rate limits.
+Tavily is an optional cloud-based engine requiring TAVILY_API_KEY to be set.
+Use --engine tavily to select Tavily. With Tavily, --category maps to topic (general/news/finance)
+and --time-range supports day/week/month/year.`,
 		Example: `  web-tools web-search "latest AI news"
   web-tools web-search "人工智能最新进展" --locale zh-CN --time-range week
   web-tools web-search "Tesla" --category news --time-range day --limit 10
@@ -58,7 +62,14 @@ func run(query string, flagJSON bool, flagOutput string, flagLimit int, flagEngi
 		))
 	}
 
-	cfg := config.DefaultConfig()
+	cfg, err := config.Load()
+	if err != nil {
+		apperrors.HandleError(apperrors.NewInputError(
+			"failed to load configuration",
+			err.Error(),
+			[]string{"check config file format", "verify environment variables"},
+		))
+	}
 	s := search.NewSearch(cfg.Search, flagEngine)
 
 	opts := search.SearchOptions{

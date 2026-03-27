@@ -85,7 +85,19 @@ func (s *Search) doTavily(query string, opts SearchOptions, locale string) (*Sea
 		return nil, fmt.Errorf("TAVILY_API_KEY is not set; required for --engine tavily")
 	}
 
-	results, err := s.tavilyClient.Query(query, opts.Limit)
+	// Map category to Tavily topic (general, news, finance are supported).
+	topic := opts.Category
+	if topic == "" {
+		topic = "general"
+	}
+
+	// Map time range: pass through if set and not "any".
+	timeRange := ""
+	if opts.TimeRange != "" && opts.TimeRange != "any" {
+		timeRange = opts.TimeRange
+	}
+
+	results, err := s.tavilyClient.Query(query, opts.Limit, topic, timeRange)
 	if err != nil {
 		return nil, err
 	}
