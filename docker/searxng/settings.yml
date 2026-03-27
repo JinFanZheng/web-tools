@@ -1,0 +1,18 @@
+use_default_settings: true
+
+general:
+  instance_name: "web-tools local"
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "auto"
+  formats:
+    - html
+    - json
+
+server:
+  secret_key: "9f539a28488abb6ef22780a390cc2885b179c99af7e1eb5b19cb903cad8db9fc"
+  bind_address: "0.0.0.0:8080"
+  port: 8080
+  limiter: false
