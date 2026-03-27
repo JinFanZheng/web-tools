@@ -10,8 +10,10 @@ import (
 
 // Search is the main entry point for web search.
 type Search struct {
-	client *SearXNGClient
-	config config.SearchConfig
+	client       *SearXNGClient
+	tavilyClient *TavilyClient
+	config       config.SearchConfig
+	engine       string
 }
 
 // SearchOptions holds user-facing search options.
@@ -44,26 +46,64 @@ type SearchResponse struct {
 }
 
 // NewSearch creates a new Search instance.
-func NewSearch(cfg config.SearchConfig) *Search {
-	return &Search{
+// The engine parameter selects the search backend ("searxng" or "tavily").
+func NewSearch(cfg config.SearchConfig, engine string) *Search {
+	s := &Search{
 		client: NewSearXNGClient(cfg.SearXNGURL),
 		config: cfg,
+		engine: engine,
 	}
+	if cfg.TavilyAPIKey != "" {
+		s.tavilyClient = NewTavilyClient(cfg.TavilyAPIKey)
+	}
+	return s
 }
 
 // Do performs a search: health check + query + normalize results.
 func (s *Search) Do(query string, opts SearchOptions) (*SearchResponse, error) {
-	// Health check first
-	if err := s.client.HealthCheck(); err != nil {
-		return nil, err
-	}
-
 	// Apply defaults
 	if opts.Limit <= 0 {
 		opts.Limit = s.config.DefaultLimit
 	}
 	if opts.Category == "" {
 		opts.Category = "general"
+	}
+
+	locale := opts.Locale
+	if locale == "" {
+		locale = "auto"
+	}
+
+	if s.engine == "tavily" {
+		return s.doTavily(query, opts, locale)
+	}
+	return s.doSearXNG(query, opts, locale)
+}
+
+func (s *Search) doTavily(query string, opts SearchOptions, locale string) (*SearchResponse, error) {
+	if s.tavilyClient == nil {
+		return nil, fmt.Errorf("TAVILY_API_KEY is not set; required for --engine tavily")
+	}
+
+	results, err := s.tavilyClient.Query(query, opts.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SearchResponse{
+		Query:      query,
+		Engine:     "tavily",
+		Locale:     locale,
+		Total:      len(results),
+		Results:    results,
+		SearchedAt: time.Now(),
+	}, nil
+}
+
+func (s *Search) doSearXNG(query string, opts SearchOptions, locale string) (*SearchResponse, error) {
+	// Health check first
+	if err := s.client.HealthCheck(); err != nil {
+		return nil, err
 	}
 
 	// Map to SearXNG options
@@ -96,11 +136,6 @@ func (s *Search) Do(query string, opts SearchOptions) (*SearchResponse, error) {
 			Engines:       r.Engines,
 			PublishedDate: publishedDate,
 		})
-	}
-
-	locale := opts.Locale
-	if locale == "" {
-		locale = "auto"
 	}
 
 	return &SearchResponse{

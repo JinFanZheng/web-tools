@@ -41,7 +41,7 @@ Zero cost, no API keys, no rate limits.`,
 	cmd.Flags().BoolVar(&flagJSON, "json", false, "JSON structured output")
 	cmd.Flags().StringVarP(&flagOutput, "output", "o", "", "Output to file")
 	cmd.Flags().IntVarP(&flagLimit, "limit", "n", 5, "Number of results")
-	cmd.Flags().StringVar(&flagEngine, "engine", "searxng", "Search engine (only searxng available)")
+	cmd.Flags().StringVar(&flagEngine, "engine", "searxng", "Search engine: searxng (default) or tavily")
 	cmd.Flags().StringVar(&flagLocale, "locale", "auto", "Language preference (zh-CN, en-US, auto)")
 	cmd.Flags().StringVar(&flagCat, "category", "general", "Search category: general / images / news / videos / files")
 	cmd.Flags().StringVar(&flagTime, "time-range", "any", "Time range: any / day / week / month / year")
@@ -50,16 +50,16 @@ Zero cost, no API keys, no rate limits.`,
 }
 
 func run(query string, flagJSON bool, flagOutput string, flagLimit int, flagEngine string, flagLocale string, flagCategory string, flagTimeRange string) {
-	if flagEngine != "searxng" {
+	if flagEngine != "searxng" && flagEngine != "tavily" {
 		apperrors.HandleError(apperrors.NewInputError(
 			"unsupported engine",
 			fmt.Sprintf("engine %q is not supported", flagEngine),
-			[]string{"only searxng is available", "use --engine searxng (default)"},
+			[]string{"supported engines: searxng, tavily", "use --engine searxng (default)"},
 		))
 	}
 
 	cfg := config.DefaultConfig()
-	s := search.NewSearch(cfg.Search)
+	s := search.NewSearch(cfg.Search, flagEngine)
 
 	opts := search.SearchOptions{
 		Limit:     flagLimit,
