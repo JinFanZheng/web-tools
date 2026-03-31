@@ -81,11 +81,17 @@ func mergeSearchConfig(dst *SearchConfig, src SearchConfig) {
 	if src.DefaultLocale != "" {
 		dst.DefaultLocale = src.DefaultLocale
 	}
+	if src.TavilyAPIKey != "" {
+		dst.TavilyAPIKey = src.TavilyAPIKey
+	}
 }
 
 func applyEnvOverrides(cfg *Config) {
 	if v := os.Getenv("SEARXNG_URL"); v != "" {
 		cfg.Search.SearXNGURL = v
+	}
+	if v := os.Getenv("TAVILY_API_KEY"); v != "" {
+		cfg.Search.TavilyAPIKey = v
 	}
 	if v := os.Getenv("WEB_READER_CACHE_TTL"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {

@@ -20,6 +20,7 @@ type ReaderConfig struct {
 // SearchConfig holds web-search specific settings.
 type SearchConfig struct {
 	SearXNGURL    string `json:"searxng_url"`
+	TavilyAPIKey  string `json:"tavily_api_key"`
 	DefaultLimit  int    `json:"default_limit"`
 	DefaultLocale string `json:"default_locale"`
 }
